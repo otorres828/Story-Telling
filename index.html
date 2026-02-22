@@ -112,6 +112,25 @@
             ring-color: rgba(99, 102, 241, 0.5);
             transform: scale(1.05);
         }
+        /* FIX: Estilo para el título editable - texto negro al editar */
+        .editable-title {
+            border: 2px dashed transparent;
+            border-radius: 8px;
+            padding: 4px 8px;
+            transition: all 0.2s;
+            cursor: text;
+        }
+        .editable-title:hover {
+            border-color: rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.1);
+        }
+        .editable-title:focus {
+            outline: none;
+            border-color: #ffffff;
+            background: #ffffff;
+            color: #1f2937 !important; /* Negro fuerte al editar */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
         .instruction-item {
             background: white;
             border: 2px solid #e2e8f0;
@@ -198,21 +217,6 @@
             color: #94a3b8;
             cursor: grab;
             font-size: 16px;
-        }
-        .editable-title {
-            border: 2px dashed transparent;
-            border-radius: 8px;
-            padding: 4px 8px;
-            transition: all 0.2s;
-        }
-        .editable-title:hover {
-            border-color: #cbd5e1;
-            background: #f8fafc;
-        }
-        .editable-title:focus {
-            outline: none;
-            border-color: #6366f1;
-            background: white;
         }
         @media print {
             .no-print { display: none !important; }
@@ -362,59 +366,88 @@
         let currentScenario = 0;
         let scenarios = [];
 
-        // Inicializar datos predeterminados
+        // DATOS INICIALES COMPLETOS - Los 3 tableros originales
         function getDefaultScenarios() {
             return [
                 {
                     id: 0,
                     name: "Astro el Robot",
                     theme: "from-blue-400 to-blue-600",
-                    icons: { 'A1': '🤖', 'E5': '🏰' },
+                    icons: { 
+                        'A1': '🤖', 'B1': '🌳', 'C1': '🗝️', 'C2': '⭐', 
+                        'D2': '🚪', 'E2': '🚀', 'E4': '💎', 'E5': '🏰' 
+                    },
                     instructions: [
-                        { id: 'inst-1', icon: '🤖', cell: 'A1', text: 'Astro despierta en su casa. ¡Comienza la aventura!' },
-                        { id: 'inst-2', icon: '🏰', cell: 'E5', text: 'Llega al castillo para completar la misión.' }
+                        { id: 'inst-0-1', icon: '🤖', cell: 'A1', text: '🚀 A1 - El Despegue: Astro el robot despierta en su casa espacial. ¡Debe ir a la estación lunar! Ayuda a Astro a moverse hacia la derecha.' },
+                        { id: 'inst-0-2', icon: '🌳', cell: 'B1', text: '🌳 B1 - El Bosque de Satélites: Astro encuentra satélites que parecen árboles espaciales. Sigue avanzando.' },
+                        { id: 'inst-0-3', icon: '🗝️', cell: 'C1', text: '🗝️ C1 - La Llave Cósmica: ¡Encuentra una llave dorada! La necesitará para abrir la puerta del cohete. Sube una fila.' },
+                        { id: 'inst-0-4', icon: '⭐', cell: 'C2', text: '⭐ C2 - La Estrella Guía: Una estrella brillante muestra el camino. Astro la sigue hacia la derecha.' },
+                        { id: 'inst-0-5', icon: '🚪', cell: 'D2', text: '🚪 D2 - La Puerta Espacial: Usa la llave para abrir esta puerta mágica. ¡Funcionó! Sigue avanzando.' },
+                        { id: 'inst-0-6', icon: '🚀', cell: 'E2', text: '🚀 E2 - El Cohete: ¡Astro llegó al cohete! Pero necesita combustible. Baja hasta la fila 4.' },
+                        { id: 'inst-0-7', icon: '💎', cell: 'E4', text: '💎 E4 - La Gema de Energía: Encuentra una gema brillante que sirve de combustible. ¡Ahora al castillo!' },
+                        { id: 'inst-0-8', icon: '🏰', cell: 'E5', text: '🏰 E5 - El Castillo Lunar: ¡Llegamos al castillo espacial! Astro puede descansar. ¡Misión cumplida!' }
                     ],
-                    generalInstructions: "Mueve a Astro desde A1 hasta el castillo en E5. ¡Sigue el camino marcado!"
+                    generalInstructions: "Mueve a Astro (🤖) desde A1 hasta el Castillo Lunar en E5. Sigue el camino: A1 → B1 → C1 → C2 → D2 → E2 → E4 → E5. ¡Recoge la llave y la gema en el camino!"
                 },
                 {
                     id: 1,
                     name: "La Abeja y la Miel",
                     theme: "from-green-400 to-green-600",
-                    icons: { 'A1': '🐝', 'E4': '🍯' },
+                    icons: { 
+                        'A1': '🐝', 'B1': '🌸', 'C1': '🌲', 'C2': '🦊', 
+                        'D2': '🕳️', 'D3': '🔦', 'D4': '🍯', 'E4': '🏥' 
+                    },
                     instructions: [
-                        { id: 'inst-1', icon: '🐝', cell: 'A1', text: 'Bella la abeja sale de la colmena.' },
-                        { id: 'inst-2', icon: '🍯', cell: 'E4', text: 'Encuentra el pote de miel dorada.' }
+                        { id: 'inst-1-1', icon: '🐝', cell: 'A1', text: '🏠 A1 - La Colmena: Bella la abeja sale de su casa. ¡Necesita encontrar la miel perdida! Vuela a la derecha.' },
+                        { id: 'inst-1-2', icon: '🌸', cell: 'B1', text: '🌸 B1 - El Jardín: Flores por todas partes, pero no hay miel aquí. Sigue volando.' },
+                        { id: 'inst-1-3', icon: '🌲', cell: 'C1', text: '🌲 C1 - El Bosque: Un bosque de pinos altos. Bella debe tener cuidado. Sube una fila.' },
+                        { id: 'inst-1-4', icon: '🦊', cell: 'C2', text: '🦊 C2 - El Zorro Astuto: ¡Un zorro aparece! Pero es amigable y muestra el camino. Ve a la derecha.' },
+                        { id: 'inst-1-5', icon: '🕳️', cell: 'D2', text: '🕳️ D2 - La Cueva: Una cueva oscura. Bella necesita su linterna. Entra con cuidado.' },
+                        { id: 'inst-1-6', icon: '🔦', cell: 'D3', text: '🔦 D3 - La Linterna: ¡Encuentra una linterna mágica! Ahora puede ver dentro de la cueva. Sigue bajando.' },
+                        { id: 'inst-1-7', icon: '🍯', cell: 'D4', text: '🍯 D4 - El Pote de Miel: ¡Encontró la miel! Pero está pesada. Necesita ayuda. Ve a la derecha.' },
+                        { id: 'inst-1-8', icon: '🏥', cell: 'E4', text: '🏥 E4 - El Hospital de Abejas: Lleva la miel al hospital para curar a las abejas enfermas. ¡Eres una heroína!' }
                     ],
-                    generalInstructions: "Ayuda a Bella a encontrar la miel escondida en el jardín."
+                    generalInstructions: "Ayuda a Bella (🐝) a llevar la miel desde A1 hasta el Hospital en E4. Recoge la linterna en el camino para poder entrar a la cueva oscura."
                 },
                 {
                     id: 2,
                     name: "Dino y el Volcán",
                     theme: "from-orange-400 to-red-500",
-                    icons: { 'A1': '🦖', 'C4': '🏰' },
+                    icons: { 
+                        'A1': '🦖', 'B1': '🌵', 'C1': '⛰️', 'C2': '🥕', 
+                        'D2': '🌋', 'D3': '🚧', 'C3': '🗝️', 'C4': '🏰' 
+                    },
                     instructions: [
-                        { id: 'inst-1', icon: '🦖', cell: 'A1', text: 'Dino despierta cerca del volcán.' },
-                        { id: 'inst-2', icon: '🏰', cell: 'C4', text: 'Llega al castillo seguro antes de la erupción.' }
+                        { id: 'inst-2-1', icon: '🦖', cell: 'A1', text: '🦖 A1 - Dino Despierta: Dino el dinosaurio bebé está en su nido. ¡El volcán está a punto de hacer erupción! Corre a la derecha.' },
+                        { id: 'inst-2-2', icon: '🌵', cell: 'B1', text: '🌵 B1 - El Desierto: Cactus puntiagudos por doquier. Dino esquiva con cuidado. Sigue corriendo.' },
+                        { id: 'inst-2-3', icon: '⛰️', cell: 'C1', text: '⛰️ C1 - La Montaña: Una montaña alta. Dino es pequeño pero valiente. Sube una fila.' },
+                        { id: 'inst-2-4', icon: '🥕', cell: 'C2', text: '🥕 C2 - El Almuerzo: Encuentra una zanahoria gigante para tener energía. ¡Ñam! Ahora a la derecha.' },
+                        { id: 'inst-2-5', icon: '🌋', cell: 'D2', text: '🌋 D2 - El Volcán Humea: ¡El volcán está cerca! Se ve humo. Corre hacia arriba rápido.' },
+                        { id: 'inst-2-6', icon: '🚧', cell: 'D3', text: '🚧 D3 - La Roca Bloqueada: Una roca grande bloquea el camino. Dino debe rodearla. Ve a la izquierda.' },
+                        { id: 'inst-2-7', icon: '🗝️', cell: 'C3', text: '🗝️ C3 - La Llave de Piedra: ¡Una llave mágica de piedra! Abrirá la puerta secreta. Sube.' },
+                        { id: 'inst-2-8', icon: '🏰', cell: 'C4', text: '🏰 C4 - El Castillo Seguro: ¡Llegaste al castillo! Aquí Dino está a salvo del volcán. ¡Gran trabajo!' }
                     ],
-                    generalInstructions: "Guía a Dino hasta el castillo esquivando obstáculos."
+                    generalInstructions: "Guía a Dino (🦖) desde A1 hasta el Castillo Seguro en C4, escapando del volcán. Esquiva obstáculos y recoge la llave para entrar al castillo."
                 }
             ];
         }
 
-        // Cargar desde localStorage
+        // Cargar desde localStorage o usar defaults
         function loadFromStorage() {
             try {
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (saved) {
                     scenarios = JSON.parse(saved);
-                    // Asegurar que todos los escenarios tengan estructura válida
+                    // Validar estructura
                     scenarios.forEach((s, i) => {
                         if (!s.instructions) s.instructions = [];
                         if (!s.icons) s.icons = {};
+                        if (!s.generalInstructions) s.generalInstructions = '';
                         s.id = i;
                     });
                 } else {
                     scenarios = getDefaultScenarios();
+                    saveToStorage();
                 }
             } catch (e) {
                 console.error('Error loading from storage:', e);
@@ -428,7 +461,6 @@
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(scenarios));
             } catch (e) {
                 console.error('Error saving to storage:', e);
-                alert('No se pudo guardar en el almacenamiento local');
             }
         }
 
@@ -464,22 +496,17 @@
                         cell.classList.remove('drag-over');
                         const iconEmoji = e.dataTransfer.getData('text/plain');
                         
-                        // Si ya hay un icono, reemplazarlo y actualizar instrucciones
                         const existing = cell.querySelector('.draggable-icon');
                         let oldIcon = null;
                         if (existing) {
                             oldIcon = existing.innerText;
                             existing.remove();
-                            // Eliminar instrucción antigua asociada a esta celda
                             removeInstructionByCell(cellId);
                         }
                         
                         createIconInCell(cell, iconEmoji);
-                        
-                        // Agregar nueva instrucción automáticamente
                         addInstruction(iconEmoji, cellId);
                         
-                        // Guardar en el escenario actual
                         scenarios[currentScenario].icons[cellId] = iconEmoji;
                         saveToStorage();
                     });
@@ -497,10 +524,7 @@
             
             iconElement.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('text/plain', emoji);
-                setTimeout(() => {
-                    iconElement.remove();
-                    // No eliminamos la instrucción aquí, esperamos al drop
-                }, 0);
+                setTimeout(() => iconElement.remove(), 0);
             });
 
             cell.appendChild(iconElement);
@@ -537,16 +561,14 @@
             saveToStorage();
         }
 
-        // Eliminar instrucción por celda (cuando se reemplaza un icono)
+        // Eliminar instrucción por celda
         function removeInstructionByCell(cellId) {
             const insts = scenarios[currentScenario].instructions;
             const index = insts.findIndex(i => i.cell === cellId);
-            if (index > -1) {
-                insts.splice(index, 1);
-            }
+            if (index > -1) insts.splice(index, 1);
         }
 
-        // Eliminar instrcción manualmente (no afecta el icono)
+        // Eliminar instrcción manualmente
         function deleteInstruction(id) {
             const insts = scenarios[currentScenario].instructions;
             const index = insts.findIndex(i => i.id === id);
@@ -559,10 +581,6 @@
 
         // Editar instrucción
         function editInstruction(id) {
-            const insts = scenarios[currentScenario].instructions;
-            const inst = insts.find(i => i.id === id);
-            if (!inst) return;
-
             const displayEl = document.getElementById(`display-${id}`);
             const textEl = document.getElementById(`text-${id}`);
             const editBtn = document.getElementById(`edit-${id}`);
@@ -570,7 +588,7 @@
 
             displayEl.classList.add('editing');
             textEl.classList.add('editing');
-            textEl.value = inst.text;
+            textEl.value = scenarios[currentScenario].instructions.find(i => i.id === id).text;
             editBtn.style.display = 'none';
             saveBtn.style.display = 'inline-block';
         }
@@ -619,7 +637,6 @@
                     </div>
                 `;
                 
-                // Eventos de drag para reordenar
                 item.addEventListener('dragstart', handleDragStart);
                 item.addEventListener('dragend', handleDragEnd);
                 item.addEventListener('dragover', handleDragOver);
@@ -628,17 +645,14 @@
                 container.appendChild(item);
             });
             
-            // Actualizar instrucciones generales
             document.getElementById('general-instructions').value = scenario.generalInstructions || '';
         }
 
-        // Drag and Drop para reordenar instrucciones
+        // Drag and Drop para reordenar
         let draggedItem = null;
-        let draggedIndex = null;
 
         function handleDragStart(e) {
             draggedItem = this;
-            draggedIndex = parseInt(this.dataset.index);
             this.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
         }
@@ -664,7 +678,6 @@
             e.preventDefault();
             const newOrder = Array.from(document.querySelectorAll('.instruction-item')).map(item => item.dataset.id);
             
-            // Reordenar array según el DOM
             const scenario = scenarios[currentScenario];
             const newInstructions = [];
             newOrder.forEach(id => {
@@ -695,7 +708,6 @@
         function switchScenario(index) {
             currentScenario = index;
             
-            // Actualizar tabs
             document.querySelectorAll('.scenario-tab').forEach((tab, i) => {
                 if (i === index) {
                     tab.classList.add('active', 'ring-4', 'ring-purple-300');
@@ -704,17 +716,14 @@
                 }
             });
             
-            // Regenerar tablero
             generateBoard();
             
-            // Cargar iconos del escenario
             const scenario = scenarios[index];
             Object.entries(scenario.icons).forEach(([cellId, emoji]) => {
                 const cell = document.getElementById(cellId);
                 if (cell) createIconInCell(cell, emoji);
             });
             
-            // Renderizar instrucciones
             renderInstructions();
         }
 
@@ -753,19 +762,15 @@
                 try {
                     const imported = JSON.parse(e.target.result);
                     
-                    // Validar estructura
                     if (!Array.isArray(imported) || imported.length !== 3) {
                         throw new Error('El archivo debe contener exactamente 3 escenarios');
                     }
                     
-                    // Confirmar importación
                     if (confirm(`¿Importar "${imported[0].name}", "${imported[1].name}" y "${imported[2].name}"? Se reemplazarán los tableros actuales.`)) {
                         scenarios = imported;
-                        // Asegurar IDs correctos
                         scenarios.forEach((s, i) => s.id = i);
                         saveToStorage();
                         
-                        // Actualizar nombres en tabs
                         scenarios.forEach((s, i) => {
                             const tab = document.querySelector(`#tab-${i} .editable-title`);
                             if (tab) tab.innerText = s.name;
@@ -779,7 +784,7 @@
                 }
             };
             reader.readAsText(file);
-            input.value = ''; // Reset para permitir reimportar
+            input.value = '';
         }
 
         // Inicialización
