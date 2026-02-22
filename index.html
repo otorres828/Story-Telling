@@ -126,7 +126,6 @@
         .scenario-btn:hover::after {
             left: 100%;
         }
-        /* Estilo para título editable */
         .editable-title {
             border: 2px dashed transparent;
             border-radius: 8px;
@@ -146,7 +145,6 @@
             color: #1f2937 !important;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        /* Instrucciones */
         .instruction-item {
             background: white;
             border: 2px solid #e2e8f0;
@@ -234,7 +232,6 @@
             cursor: grab;
             font-size: 16px;
         }
-        /* Colores por tema */
         .theme-astro {
             background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
             border-color: #3b82f6;
@@ -253,10 +250,102 @@
             margin-top: 20px;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
+        
+        /* ESTILOS DE IMPRESIÓN CORREGIDOS */
         @media print {
-            .no-print { display: none !important; }
-            body { background: white; padding: 0; }
-            .grid-board { transform: scale(1.2); transform-origin: top center; }
+            @page {
+                size: auto;
+                margin: 10mm;
+            }
+            
+            body { 
+                background: white !important; 
+                padding: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .no-print { 
+                display: none !important; 
+            }
+            
+            /* Layout de impresión: tablero arriba, instrucciones abajo */
+            .max-w-7xl {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                gap: 30px !important;
+            }
+            
+            /* Ocultar el panel lateral completamente */
+            .lg\:w-80 {
+                display: none !important;
+            }
+            
+            /* Área de diseño ocupa todo el ancho */
+            .flex-1 {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            
+            /* Tablero centrado y escalado */
+            .grid-board { 
+                transform: scale(1.3) !important; 
+                transform-origin: top center !important;
+                margin: 0 auto 40px auto !important;
+                page-break-after: always !important;
+                break-after: page !important;
+            }
+            
+            /* Panel de instrucciones debajo del tablero */
+            .story-panel {
+                width: 90% !important;
+                max-width: 600px !important;
+                margin: 30px auto 0 auto !important;
+                page-break-before: always !important;
+                break-before: page !important;
+                box-shadow: none !important;
+                border: 2px solid #cbd5e1 !important;
+            }
+            
+            /* Ocultar elementos innecesarios en impresión */
+            .scenario-btn,
+            .text-center.mb-6,
+            .mt-6.grid.grid-cols-2 {
+                display: none !important;
+            }
+            
+            /* Asegurar que las instrucciones sean visibles */
+            .instruction-item {
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+                border: 1px solid #e2e8f0 !important;
+                margin-bottom: 10px !important;
+            }
+            
+            .instruction-actions {
+                display: none !important;
+            }
+            
+            .drag-handle {
+                display: none !important;
+            }
+            
+            /* Mostrar solo el texto, no los inputs */
+            .instruction-input {
+                display: none !important;
+            }
+            
+            .instruction-display {
+                display: block !important;
+            }
+            
+            /* Título de la historia visible */
+            #story-title-display {
+                font-size: 18px !important;
+                font-weight: bold !important;
+                margin-bottom: 15px !important;
+            }
         }
     </style>
 </head>
@@ -353,7 +442,7 @@
 
         <!-- Área de Diseño (Centro) -->
         <div class="flex-1 flex flex-col items-center justify-start py-4">
-            <div class="text-center mb-6">
+            <div class="text-center mb-6 no-print">
                 <span class="bg-purple-100 text-purple-700 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">Storytelling Preescolar</span>
                 <h1 class="text-4xl font-black text-slate-800 mt-2 mb-2 tracking-tight">🎭 Editor de Aventuras</h1>
             </div>
@@ -371,24 +460,27 @@
                 </button>
             </div>
 
-            <div class="grid-board" id="main-board"></div>
-            
-            <!-- Panel de Instrucciones Editable -->
-            <div id="story-panel" class="story-panel w-full max-w-2xl theme-astro">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <span>📖</span> <span id="story-title-display">Astro el Robot Espacial</span>
-                    </h3>
-                    <span class="text-xs text-slate-500 bg-white/50 px-3 py-1 rounded-full">Arrastra para ordenar</span>
-                </div>
+            <!-- CONTENEDOR DE IMPRESIÓN -->
+            <div id="print-container" class="flex flex-col items-center w-full">
+                <div class="grid-board" id="main-board"></div>
                 
-                <div id="instructions-list" class="space-y-2">
-                    <!-- Instrucciones generadas dinámicamente -->
-                </div>
-                
-                <div class="mt-4 pt-4 border-t border-slate-300/50">
-                    <p class="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Instrucciones Generales:</p>
-                    <textarea id="general-instructions" class="w-full p-3 border-2 border-slate-300 rounded-lg text-sm text-slate-700 bg-white/80 resize-y min-h-[80px]" placeholder="Escribe aquí las instrucciones generales para el niño..."></textarea>
+                <!-- Panel de Instrucciones Editable -->
+                <div id="story-panel" class="story-panel w-full max-w-2xl theme-astro">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <span>📖</span> <span id="story-title-display">Astro el Robot Espacial</span>
+                        </h3>
+                        <span class="text-xs text-slate-500 bg-white/50 px-3 py-1 rounded-full no-print">Arrastra para ordenar</span>
+                    </div>
+                    
+                    <div id="instructions-list" class="space-y-2">
+                        <!-- Instrucciones generadas dinámicamente -->
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t border-slate-300/50">
+                        <p class="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Instrucciones Generales:</p>
+                        <textarea id="general-instructions" class="w-full p-3 border-2 border-slate-300 rounded-lg text-sm text-slate-700 bg-white/80 resize-y min-h-[80px]" placeholder="Escribe aquí las instrucciones generales para el niño..."></textarea>
+                    </div>
                 </div>
             </div>
 
@@ -424,7 +516,6 @@
         let currentScenario = 0;
         let scenarios = [];
 
-        // Datos iniciales por defecto
         function getDefaultScenarios() {
             return [
                 {
@@ -484,7 +575,6 @@
             ];
         }
 
-        // Cargar desde localStorage
         function loadFromStorage() {
             try {
                 const saved = localStorage.getItem(STORAGE_KEY);
@@ -506,7 +596,6 @@
             }
         }
 
-        // Guardar en localStorage
         function saveToStorage() {
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(scenarios));
@@ -515,7 +604,6 @@
             }
         }
 
-        // Generar tablero
         function generateBoard() {
             board.innerHTML = '';
             for (let row = 5; row >= 1; row--) {
@@ -578,7 +666,6 @@
             cell.appendChild(iconElement);
         }
 
-        // Configurar paleta
         document.querySelectorAll('.icon-item').forEach(item => {
             item.addEventListener('dragstart', (e) => {
                 const emoji = item.getAttribute('data-icon');
@@ -596,7 +683,6 @@
             saveToStorage();
         }
 
-        // Agregar instrucción (campo vacío para editar)
         function addInstruction(icon, cell, text = '') {
             const newInst = {
                 id: 'inst-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
@@ -606,8 +692,6 @@
             };
             scenarios[currentScenario].instructions.push(newInst);
             renderInstructions();
-            
-            // Auto-editar la nueva instrucción
             setTimeout(() => editInstruction(newInst.id), 0);
             saveToStorage();
         }
@@ -654,7 +738,6 @@
             saveToStorage();
         }
 
-        // Renderizar instrucciones
         function renderInstructions() {
             const container = document.getElementById('instructions-list');
             const scenario = scenarios[currentScenario];
@@ -681,7 +764,6 @@
                     </div>
                 `;
                 
-                // Eventos drag and drop
                 item.addEventListener('dragstart', handleDragStart);
                 item.addEventListener('dragend', handleDragEnd);
                 item.addEventListener('dragover', handleDragOver);
@@ -693,7 +775,6 @@
             document.getElementById('general-instructions').value = scenario.generalInstructions || '';
         }
 
-        // Drag and Drop
         let draggedItem = null;
 
         function handleDragStart(e) {
@@ -749,7 +830,6 @@
             }, { offset: Number.NEGATIVE_INFINITY }).element;
         }
 
-        // Cambiar escenario
         function loadScenario(index) {
             currentScenario = index;
             const scenario = scenarios[index];
@@ -769,7 +849,6 @@
                 if (cell) createIconInCell(cell, emoji);
             });
             
-            // Actualizar panel
             document.getElementById('story-title-display').innerText = scenario.fullName || scenario.name;
             
             const panel = document.getElementById('story-panel');
@@ -786,13 +865,11 @@
             saveToStorage();
         }
 
-        // Guardar instrucciones generales
         document.getElementById('general-instructions').addEventListener('input', function(e) {
             scenarios[currentScenario].generalInstructions = e.target.value;
             saveToStorage();
         });
 
-        // Exportar JSON
         function exportBoards() {
             const dataStr = JSON.stringify(scenarios, null, 2);
             const dataBlob = new Blob([dataStr], { type: 'application/json' });
@@ -805,7 +882,6 @@
             document.body.removeChild(link);
         }
 
-        // Importar JSON
         function importBoards(input) {
             const file = input.files[0];
             if (!file) return;
@@ -840,7 +916,6 @@
             input.value = '';
         }
 
-        // Inicialización
         loadFromStorage();
         generateBoard();
         loadScenario(0);
