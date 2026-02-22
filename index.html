@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Storytelling Editor Pro - Tableros Persistentes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .grid-board {
+            display: grid;
+            grid-template-columns: repeat(5, 100px);
+            grid-template-rows: repeat(5, 100px);
+            gap: 6px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px;
+            border-radius: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #ffffff;
+            border: 3px solid #e2e8f0;
+            border-radius: 12px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .cell.drag-over {
+            background-color: #fef3c7;
+            border: 3px dashed #f59e0b;
+            transform: scale(0.95);
+        }
+        .coord-label {
+            position: absolute;
+            top: 4px;
+            left: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #94a3b8;
+            pointer-events: none;
+            background: rgba(255,255,255,0.8);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .draggable-icon {
+            font-size: 72px;
+            line-height: 1;
+            cursor: grab;
+            user-select: none;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .draggable-icon:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+        }
+        .start-cell {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            border-color: #22c55e;
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+        }
+        .sidebar-section {
+            margin-bottom: 1.5rem;
+        }
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .icon-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: white;
+            padding: 8px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            cursor: grab;
+            transition: all 0.2s;
+        }
+        .icon-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .icon-item span:first-child {
+            font-size: 36px;
+            line-height: 1;
+        }
+        .icon-item span:last-child {
+            font-size: 9px;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+        .scenario-tab {
+            transition: all 0.3s;
+            position: relative;
+        }
+        .scenario-tab.active {
+            ring: 4px;
+            ring-color: rgba(99, 102, 241, 0.5);
+            transform: scale(1.05);
+        }
+        .instruction-item {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: move;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .instruction-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-color: #cbd5e1;
+        }
+        .instruction-item.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+        .instruction-item.drag-over {
+            border-top: 3px solid #6366f1;
+        }
+        .instruction-text {
+            width: 100%;
+            min-height: 60px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 8px;
+            font-size: 14px;
+            resize: vertical;
+            display: none;
+        }
+        .instruction-text.editing {
+            display: block;
+        }
+        .instruction-display {
+            display: block;
+            font-size: 14px;
+            color: #374151;
+        }
+        .instruction-display.editing {
+            display: none;
+        }
+        .instruction-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            justify-content: flex-end;
+        }
+        .btn-icon {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+        .btn-edit {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .btn-edit:hover {
+            background: #bfdbfe;
+        }
+        .btn-save {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .btn-save:hover {
+            background: #bbf7d0;
+        }
+        .btn-delete {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .btn-delete:hover {
+            background: #fecaca;
+        }
+        .drag-handle {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            cursor: grab;
+            font-size: 16px;
+        }
+        .editable-title {
+            border: 2px dashed transparent;
+            border-radius: 8px;
+            padding: 4px 8px;
+            transition: all 0.2s;
+        }
+        .editable-title:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+        }
+        .editable-title:focus {
+            outline: none;
+            border-color: #6366f1;
+            background: white;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; }
+            .grid-board { transform: scale(1.2); transform-origin: top center; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 p-4 md:p-8 font-sans">
+
+    <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
+        
+        <!-- Panel de Herramientas (Izquierda) -->
+        <div class="no-print w-full lg:w-80 bg-white p-6 rounded-2xl shadow-xl border border-slate-200 overflow-y-auto max-h-[90vh]">
+            <h2 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
+                <span>🎨</span> Elementos
+            </h2>
+            
+            <div class="sidebar-section">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Personajes</h3>
+                <div class="icon-grid" id="palette-living">
+                    <div class="icon-item" draggable="true" data-icon="🤖"><span>🤖</span><span>Robot</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🐶"><span>🐶</span><span>Perro</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🐱"><span>🐱</span><span>Gato</span></div>
+                    <div class="icon-item" draggable="true" data-icon="👨‍🚀"><span>👨‍🚀</span><span>Astro</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🦖"><span>🦖</span><span>Dino</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🦄"><span>🦄</span><span>Unicornio</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🐝"><span>🐝</span><span>Abeja</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🦊"><span>🦊</span><span>Zorro</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🐰"><span>🐰</span><span>Conejo</span></div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Objetos</h3>
+                <div class="icon-grid" id="palette-items">
+                    <div class="icon-item" draggable="true" data-icon="🍎"><span>🍎</span><span>Manzana</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🗝️"><span>🗝️</span><span>Llave</span></div>
+                    <div class="icon-item" draggable="true" data-icon="💎"><span>💎</span><span>Gema</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🎁"><span>🎁</span><span>Regalo</span></div>
+                    <div class="icon-item" draggable="true" data-icon="⭐"><span>⭐</span><span>Estrella</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🍯"><span>🍯</span><span>Miel</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🥕"><span>🥕</span><span>Zanahoria</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🚀"><span>🚀</span><span>Cohete</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🔦"><span>🔦</span><span>Linterna</span></div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Naturaleza</h3>
+                <div class="icon-grid" id="palette-nature">
+                    <div class="icon-item" draggable="true" data-icon="🌳"><span>🌳</span><span>Árbol</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🌵"><span>🌵</span><span>Cactus</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🔥"><span>🔥</span><span>Fuego</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🌊"><span>🌊</span><span>Agua</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🌋"><span>🌋</span><span>Volcán</span></div>
+                    <div class="icon-item" draggable="true" data-icon="⛰️"><span>⛰️</span><span>Montaña</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🕳️"><span>🕳️</span><span>Agujero</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🌲"><span>🌲</span><span>Bosque</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🌙"><span>🌙</span><span>Luna</span></div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Lugares</h3>
+                <div class="icon-grid" id="palette-city">
+                    <div class="icon-item" draggable="true" data-icon="🏠"><span>🏠</span><span>Casa</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🏰"><span>🏰</span><span>Castillo</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🚀"><span>🚀</span><span>Inicio</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🏁"><span>🏁</span><span>Meta</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🏥"><span>🏥</span><span>Hospital</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🚧"><span>🚧</span><span>Muro</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🛖"><span>🛖</span><span>Cabaña</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🌉"><span>🌉</span><span>Puente</span></div>
+                    <div class="icon-item" draggable="true" data-icon="🚪"><span>🚪</span><span>Puerta</span></div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2 mt-4 pt-4 border-t border-slate-100">
+                <button onclick="window.print()" class="w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-3 rounded-xl font-bold hover:shadow-lg transition">
+                    🖨️ Imprimir Tablero
+                </button>
+                <button onclick="exportBoards()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-xl font-bold hover:shadow-lg transition">
+                    💾 Descargar Tableros
+                </button>
+                <button onclick="document.getElementById('import-file').click()" class="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-3 rounded-xl font-bold hover:shadow-lg transition">
+                    📁 Importar Tablero
+                </button>
+                <input type="file" id="import-file" accept=".json" class="hidden" onchange="importBoards(this)">
+                <button onclick="clearBoard()" class="w-full bg-slate-100 text-slate-600 py-2 rounded-xl text-sm font-medium hover:bg-slate-200 transition">
+                    🧹 Limpiar Tablero
+                </button>
+            </div>
+        </div>
+
+        <!-- Área de Diseño (Centro) -->
+        <div class="flex-1 flex flex-col items-center justify-start py-4">
+            <div class="text-center mb-6">
+                <span class="bg-purple-100 text-purple-700 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">
+                    Storytelling Pro
+                </span>
+                <h1 class="text-4xl font-black text-slate-800 mt-2 mb-2 tracking-tight">
+                    🎭 Editor de Aventuras
+                </h1>
+            </div>
+
+            <!-- Tabs de Escenarios -->
+            <div class="flex gap-4 mb-6 no-print flex-wrap justify-center" id="scenario-tabs">
+                <button onclick="switchScenario(0)" id="tab-0" class="scenario-tab active bg-gradient-to-br from-blue-400 to-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg">
+                    <span class="editable-title" contenteditable="true" onblur="updateScenarioName(0, this)" onclick="event.stopPropagation()">Astro el Robot</span>
+                </button>
+                <button onclick="switchScenario(1)" id="tab-1" class="scenario-tab bg-gradient-to-br from-green-400 to-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg">
+                    <span class="editable-title" contenteditable="true" onblur="updateScenarioName(1, this)" onclick="event.stopPropagation()">La Abeja y la Miel</span>
+                </button>
+                <button onclick="switchScenario(2)" id="tab-2" class="scenario-tab bg-gradient-to-br from-orange-400 to-red-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg">
+                    <span class="editable-title" contenteditable="true" onblur="updateScenarioName(2, this)" onclick="event.stopPropagation()">Dino y el Volcán</span>
+                </button>
+            </div>
+
+            <div class="grid-board" id="main-board"></div>
+            
+            <!-- Panel de Instrucciones -->
+            <div class="w-full max-w-2xl mt-8 bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl p-6 shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-yellow-800 flex items-center gap-2">
+                        <span>📖</span> Instrucciones de la Aventura
+                    </h3>
+                    <span class="text-xs text-yellow-600 bg-yellow-100 px-3 py-1 rounded-full">Arrastra para ordenar</span>
+                </div>
+                
+                <div id="instructions-list" class="space-y-2">
+                    <!-- Instrucciones generadas dinámicamente -->
+                </div>
+                
+                <div class="mt-4 pt-4 border-t border-yellow-200">
+                    <p class="text-xs text-yellow-700 font-semibold uppercase tracking-wide mb-2">Guía General:</p>
+                    <textarea id="general-instructions" class="w-full p-3 border border-yellow-300 rounded-lg text-sm text-slate-700 bg-white/80 resize-y min-h-[80px]" placeholder="Escribe aquí las instrucciones generales para el niño..."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'storytelling_boards_v1';
+        const board = document.getElementById('main-board');
+        const cols = ['A', 'B', 'C', 'D', 'E'];
+        let currentScenario = 0;
+        let scenarios = [];
+
+        // Inicializar datos predeterminados
+        function getDefaultScenarios() {
+            return [
+                {
+                    id: 0,
+                    name: "Astro el Robot",
+                    theme: "from-blue-400 to-blue-600",
+                    icons: { 'A1': '🤖', 'E5': '🏰' },
+                    instructions: [
+                        { id: 'inst-1', icon: '🤖', cell: 'A1', text: 'Astro despierta en su casa. ¡Comienza la aventura!' },
+                        { id: 'inst-2', icon: '🏰', cell: 'E5', text: 'Llega al castillo para completar la misión.' }
+                    ],
+                    generalInstructions: "Mueve a Astro desde A1 hasta el castillo en E5. ¡Sigue el camino marcado!"
+                },
+                {
+                    id: 1,
+                    name: "La Abeja y la Miel",
+                    theme: "from-green-400 to-green-600",
+                    icons: { 'A1': '🐝', 'E4': '🍯' },
+                    instructions: [
+                        { id: 'inst-1', icon: '🐝', cell: 'A1', text: 'Bella la abeja sale de la colmena.' },
+                        { id: 'inst-2', icon: '🍯', cell: 'E4', text: 'Encuentra el pote de miel dorada.' }
+                    ],
+                    generalInstructions: "Ayuda a Bella a encontrar la miel escondida en el jardín."
+                },
+                {
+                    id: 2,
+                    name: "Dino y el Volcán",
+                    theme: "from-orange-400 to-red-500",
+                    icons: { 'A1': '🦖', 'C4': '🏰' },
+                    instructions: [
+                        { id: 'inst-1', icon: '🦖', cell: 'A1', text: 'Dino despierta cerca del volcán.' },
+                        { id: 'inst-2', icon: '🏰', cell: 'C4', text: 'Llega al castillo seguro antes de la erupción.' }
+                    ],
+                    generalInstructions: "Guía a Dino hasta el castillo esquivando obstáculos."
+                }
+            ];
+        }
+
+        // Cargar desde localStorage
+        function loadFromStorage() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    scenarios = JSON.parse(saved);
+                    // Asegurar que todos los escenarios tengan estructura válida
+                    scenarios.forEach((s, i) => {
+                        if (!s.instructions) s.instructions = [];
+                        if (!s.icons) s.icons = {};
+                        s.id = i;
+                    });
+                } else {
+                    scenarios = getDefaultScenarios();
+                }
+            } catch (e) {
+                console.error('Error loading from storage:', e);
+                scenarios = getDefaultScenarios();
+            }
+        }
+
+        // Guardar en localStorage
+        function saveToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(scenarios));
+            } catch (e) {
+                console.error('Error saving to storage:', e);
+                alert('No se pudo guardar en el almacenamiento local');
+            }
+        }
+
+        // Generar tablero visual
+        function generateBoard() {
+            board.innerHTML = '';
+            for (let row = 5; row >= 1; row--) {
+                cols.forEach(col => {
+                    const cellId = `${col}${row}`;
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.id = cellId;
+                    
+                    if (cellId === 'A1') cell.classList.add('start-cell');
+                    
+                    const label = document.createElement('span');
+                    label.className = 'coord-label';
+                    label.innerText = cellId;
+                    cell.appendChild(label);
+                    
+                    // Eventos Drag & Drop para celdas
+                    cell.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        cell.classList.add('drag-over');
+                    });
+                    
+                    cell.addEventListener('dragleave', () => {
+                        cell.classList.remove('drag-over');
+                    });
+                    
+                    cell.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        cell.classList.remove('drag-over');
+                        const iconEmoji = e.dataTransfer.getData('text/plain');
+                        
+                        // Si ya hay un icono, reemplazarlo y actualizar instrucciones
+                        const existing = cell.querySelector('.draggable-icon');
+                        let oldIcon = null;
+                        if (existing) {
+                            oldIcon = existing.innerText;
+                            existing.remove();
+                            // Eliminar instrucción antigua asociada a esta celda
+                            removeInstructionByCell(cellId);
+                        }
+                        
+                        createIconInCell(cell, iconEmoji);
+                        
+                        // Agregar nueva instrucción automáticamente
+                        addInstruction(iconEmoji, cellId);
+                        
+                        // Guardar en el escenario actual
+                        scenarios[currentScenario].icons[cellId] = iconEmoji;
+                        saveToStorage();
+                    });
+
+                    board.appendChild(cell);
+                });
+            }
+        }
+
+        function createIconInCell(cell, emoji) {
+            const iconElement = document.createElement('span');
+            iconElement.className = 'draggable-icon';
+            iconElement.innerText = emoji;
+            iconElement.draggable = true;
+            
+            iconElement.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', emoji);
+                setTimeout(() => {
+                    iconElement.remove();
+                    // No eliminamos la instrucción aquí, esperamos al drop
+                }, 0);
+            });
+
+            cell.appendChild(iconElement);
+        }
+
+        // Configurar paleta
+        document.querySelectorAll('.icon-item').forEach(item => {
+            item.addEventListener('dragstart', (e) => {
+                const emoji = item.getAttribute('data-icon');
+                e.dataTransfer.setData('text/plain', emoji);
+            });
+        });
+
+        document.body.addEventListener('dragover', (e) => e.preventDefault());
+
+        function clearBoard() {
+            document.querySelectorAll('.cell .draggable-icon').forEach(icon => icon.remove());
+            scenarios[currentScenario].icons = {};
+            scenarios[currentScenario].instructions = [];
+            renderInstructions();
+            saveToStorage();
+        }
+
+        // Agregar instrucción
+        function addInstruction(icon, cell, text = '') {
+            const newInst = {
+                id: 'inst-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                icon: icon,
+                cell: cell,
+                text: text || `${icon} en ${cell}: Describe qué pasa aquí...`
+            };
+            scenarios[currentScenario].instructions.push(newInst);
+            renderInstructions();
+            saveToStorage();
+        }
+
+        // Eliminar instrucción por celda (cuando se reemplaza un icono)
+        function removeInstructionByCell(cellId) {
+            const insts = scenarios[currentScenario].instructions;
+            const index = insts.findIndex(i => i.cell === cellId);
+            if (index > -1) {
+                insts.splice(index, 1);
+            }
+        }
+
+        // Eliminar instrcción manualmente (no afecta el icono)
+        function deleteInstruction(id) {
+            const insts = scenarios[currentScenario].instructions;
+            const index = insts.findIndex(i => i.id === id);
+            if (index > -1) {
+                insts.splice(index, 1);
+                renderInstructions();
+                saveToStorage();
+            }
+        }
+
+        // Editar instrucción
+        function editInstruction(id) {
+            const insts = scenarios[currentScenario].instructions;
+            const inst = insts.find(i => i.id === id);
+            if (!inst) return;
+
+            const displayEl = document.getElementById(`display-${id}`);
+            const textEl = document.getElementById(`text-${id}`);
+            const editBtn = document.getElementById(`edit-${id}`);
+            const saveBtn = document.getElementById(`save-${id}`);
+
+            displayEl.classList.add('editing');
+            textEl.classList.add('editing');
+            textEl.value = inst.text;
+            editBtn.style.display = 'none';
+            saveBtn.style.display = 'inline-block';
+        }
+
+        // Guardar edición
+        function saveInstruction(id) {
+            const insts = scenarios[currentScenario].instructions;
+            const inst = insts.find(i => i.id === id);
+            if (!inst) return;
+
+            const textEl = document.getElementById(`text-${id}`);
+            inst.text = textEl.value;
+
+            renderInstructions();
+            saveToStorage();
+        }
+
+        // Renderizar instrucciones con drag and drop
+        function renderInstructions() {
+            const container = document.getElementById('instructions-list');
+            const scenario = scenarios[currentScenario];
+            
+            container.innerHTML = '';
+            
+            scenario.instructions.forEach((inst, index) => {
+                const item = document.createElement('div');
+                item.className = 'instruction-item';
+                item.draggable = true;
+                item.dataset.id = inst.id;
+                item.dataset.index = index;
+                
+                item.innerHTML = `
+                    <span class="drag-handle">⋮⋮</span>
+                    <div class="pl-8">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-2xl">${inst.icon}</span>
+                            <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">${inst.cell}</span>
+                        </div>
+                        <div id="display-${inst.id}" class="instruction-display">${inst.text}</div>
+                        <textarea id="text-${inst.id}" class="instruction-text">${inst.text}</textarea>
+                        <div class="instruction-actions">
+                            <button onclick="editInstruction('${inst.id}')" id="edit-${inst.id}" class="btn-icon btn-edit">✏️ Editar</button>
+                            <button onclick="saveInstruction('${inst.id}')" id="save-${inst.id}" class="btn-icon btn-save" style="display:none;">💾 Guardar</button>
+                            <button onclick="deleteInstruction('${inst.id}')" class="btn-icon btn-delete">🗑️ Eliminar</button>
+                        </div>
+                    </div>
+                `;
+                
+                // Eventos de drag para reordenar
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragend', handleDragEnd);
+                item.addEventListener('dragover', handleDragOver);
+                item.addEventListener('drop', handleDrop);
+                
+                container.appendChild(item);
+            });
+            
+            // Actualizar instrucciones generales
+            document.getElementById('general-instructions').value = scenario.generalInstructions || '';
+        }
+
+        // Drag and Drop para reordenar instrucciones
+        let draggedItem = null;
+        let draggedIndex = null;
+
+        function handleDragStart(e) {
+            draggedItem = this;
+            draggedIndex = parseInt(this.dataset.index);
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.instruction-item').forEach(item => {
+                item.classList.remove('drag-over');
+            });
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            const afterElement = getDragAfterElement(document.getElementById('instructions-list'), e.clientY);
+            if (afterElement == null) {
+                document.getElementById('instructions-list').appendChild(draggedItem);
+            } else {
+                document.getElementById('instructions-list').insertBefore(draggedItem, afterElement);
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const newOrder = Array.from(document.querySelectorAll('.instruction-item')).map(item => item.dataset.id);
+            
+            // Reordenar array según el DOM
+            const scenario = scenarios[currentScenario];
+            const newInstructions = [];
+            newOrder.forEach(id => {
+                const inst = scenario.instructions.find(i => i.id === id);
+                if (inst) newInstructions.push(inst);
+            });
+            
+            scenario.instructions = newInstructions;
+            saveToStorage();
+            renderInstructions();
+        }
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.instruction-item:not(.dragging)')];
+            
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        // Cambiar escenario
+        function switchScenario(index) {
+            currentScenario = index;
+            
+            // Actualizar tabs
+            document.querySelectorAll('.scenario-tab').forEach((tab, i) => {
+                if (i === index) {
+                    tab.classList.add('active', 'ring-4', 'ring-purple-300');
+                } else {
+                    tab.classList.remove('active', 'ring-4', 'ring-purple-300');
+                }
+            });
+            
+            // Regenerar tablero
+            generateBoard();
+            
+            // Cargar iconos del escenario
+            const scenario = scenarios[index];
+            Object.entries(scenario.icons).forEach(([cellId, emoji]) => {
+                const cell = document.getElementById(cellId);
+                if (cell) createIconInCell(cell, emoji);
+            });
+            
+            // Renderizar instrucciones
+            renderInstructions();
+        }
+
+        // Actualizar nombre de escenario
+        function updateScenarioName(index, element) {
+            scenarios[index].name = element.innerText;
+            saveToStorage();
+        }
+
+        // Guardar instrucciones generales
+        document.getElementById('general-instructions').addEventListener('input', function(e) {
+            scenarios[currentScenario].generalInstructions = e.target.value;
+            saveToStorage();
+        });
+
+        // Exportar a JSON
+        function exportBoards() {
+            const dataStr = JSON.stringify(scenarios, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `storytelling-tableros-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Importar desde JSON
+        function importBoards(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    
+                    // Validar estructura
+                    if (!Array.isArray(imported) || imported.length !== 3) {
+                        throw new Error('El archivo debe contener exactamente 3 escenarios');
+                    }
+                    
+                    // Confirmar importación
+                    if (confirm(`¿Importar "${imported[0].name}", "${imported[1].name}" y "${imported[2].name}"? Se reemplazarán los tableros actuales.`)) {
+                        scenarios = imported;
+                        // Asegurar IDs correctos
+                        scenarios.forEach((s, i) => s.id = i);
+                        saveToStorage();
+                        
+                        // Actualizar nombres en tabs
+                        scenarios.forEach((s, i) => {
+                            const tab = document.querySelector(`#tab-${i} .editable-title`);
+                            if (tab) tab.innerText = s.name;
+                        });
+                        
+                        switchScenario(0);
+                        alert('¡Tableros importados exitosamente!');
+                    }
+                } catch (err) {
+                    alert('Error al importar: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            input.value = ''; // Reset para permitir reimportar
+        }
+
+        // Inicialización
+        loadFromStorage();
+        generateBoard();
+        switchScenario(0);
+    </script>
+</body>
+</html>
